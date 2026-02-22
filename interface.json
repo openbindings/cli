@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "source_error",
+    "message": "open ./usage.kdl: no such file or directory",
+    "details": {
+      "format": "usage@2.0.0",
+      "source": "./usage.kdl"
+    }
+  }
+}

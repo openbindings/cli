@@ -1,0 +1,52 @@
+version: 2
+
+project_name: ob
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/ob
+    binary: ob
+    ldflags:
+      - -s -w -X github.com/openbindings/cli/internal/app.OBVersion={{.Version}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+release:
+  github:
+    owner: openbindings
+    name: cli
+  draft: false
+  prerelease: auto

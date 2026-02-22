@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openbindings.dev/schemas/openbindings-workspace.json",
+  "title": "OpenBindings CLI Workspace",
+  "description": "A workspace is a saved configuration context for working with OpenBindings targets.",
+  "type": "object",
+  "required": [
+    "version",
+    "name"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Version of the workspace format (semver).",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "examples": [
+        "0.1.0"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "description": "Unique name for this workspace.",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description."
+    },
+    "base": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Name of another workspace to inherit from. If base workspace is missing, ob errors. If null or omitted, standalone (inherits from builtins only)."
+    },
+    "targets": {
+      "type": "array",
+      "description": "Targets to work with. Duplicates are allowed (like browser tabs).",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for this target instance."
+          },
+          "url": {
+            "type": "string",
+            "description": "Target URL (e.g., 'exec:my-cli', 'https://api.example.com')."
+          },
+          "label": {
+            "type": "string",
+            "description": "Display label for the target."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "Settings for ob behavior.",
+      "properties": {
+        "editor": {
+          "type": "string",
+          "description": "Preferred editor for opening files (e.g., 'code', 'vim')."
+        },
+        "outputFormat": {
+          "type": "string",
+          "enum": [
+            "json",
+            "table",
+            "yaml"
+          ],
+          "description": "Default output format for CLI commands.",
+          "default": "json"
+        }
+      },
+      "additionalProperties": true
+    },
+    "delegates": {
+      "type": "array",
+      "description": "Known binding format handler delegates (URLs or exec: references).",
+      "items": {
+        "type": "string",
+        "description": "Delegate location (e.g., 'exec:my-cli', 'https://api.example.com')."
+      }
+    },
+    "delegatePreferences": {
+      "type": "object",
+      "description": "Preferred binding format handler delegate for each format.",
+      "additionalProperties": {
+        "type": "string",
+        "description": "Delegate location to use for this format."
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Input associations organized by target ID and operation.",
+      "additionalProperties": {
+        "type": "object",
+        "description": "Operations for this target (keyed by opKey).",
+        "additionalProperties": {
+          "type": "object",
+          "description": "Inputs for this operation (keyed by input name).",
+          "additionalProperties": {
+            "type": "string",
+            "description": "Input reference (typically a file path)."
+          }
+        }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "description": "TUI state for session restoration.",
+      "properties": {
+        "activeTargetId": {
+          "type": "string",
+          "description": "ID of the currently focused target."
+        },
+        "targets": {
+          "type": "object",
+          "description": "Per-target UI state, keyed by target ID.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "expanded": {
+                "type": "array",
+                "description": "Tree paths that are expanded.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "selected": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Currently selected tree path."
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

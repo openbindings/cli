@@ -1,0 +1,536 @@
+{
+    "openbindings": "0.1.0",
+    "name": "OpenBindings CLI",
+    "version": "0.1.0",
+    "description": "OpenBindings CLI (ob) — reference implementation that delegates binding format handling and binding context provision. ob implements both delegate interfaces itself and can serve as a delegate for other orchestrators.",
+    "imports": {
+        "openbindings.software": "../../../spec/interfaces/openbindings.software.json",
+        "openbindings.binding-format-handler": "../../../spec/interfaces/openbindings.binding-format-handler.json",
+        "openbindings.binding-context-provider": "../../../spec/interfaces/openbindings.binding-context-provider.json"
+    },
+    "schemas": {
+        "Error": {
+            "type": "object",
+            "description": "Structured error information.",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "Machine-readable error code."
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Human-readable error message."
+                },
+                "details": {
+                    "description": "Additional error details. Shape is error-specific."
+                }
+            },
+            "required": [
+                "code",
+                "message"
+            ],
+            "additionalProperties": false
+        },
+        "SoftwareInfo": {
+            "type": "object",
+            "description": "Identity and metadata for a piece of software.",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Human-readable display name."
+                },
+                "version": {
+                    "type": "string",
+                    "description": "Software implementation version."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Brief description of what this software does."
+                },
+                "homepage": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL to documentation or project page."
+                },
+                "repository": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL to source code repository."
+                },
+                "maintainer": {
+                    "type": "string",
+                    "description": "Author or maintaining organization."
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "CreateInterfaceSource": {
+            "type": "object",
+            "description": "A binding source to extract operations from.",
+            "properties": {
+                "format": {
+                    "type": "string",
+                    "description": "Format token (e.g., usage@2.13.1, openapi@3.1)."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Key name for this source in the output OBI's sources."
+                },
+                "location": {
+                    "type": "string",
+                    "description": "Location to fetch content from (path or URL)."
+                },
+                "content": {
+                    "description": "Content provided directly."
+                },
+                "outputLocation": {
+                    "type": "string",
+                    "description": "Location to reference in the output OBI. Ignored if embed is true."
+                },
+                "embed": {
+                    "type": "boolean",
+                    "description": "If true, embed content inline in output."
+                }
+            },
+            "required": [
+                "format"
+            ],
+            "oneOf": [
+                {
+                    "required": [
+                        "location"
+                    ]
+                },
+                {
+                    "required": [
+                        "content"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "CreateInterfaceInput": {
+            "type": "object",
+            "properties": {
+                "openbindingsVersion": {
+                    "type": "string",
+                    "description": "Target OpenBindings version (e.g., 0.1.0)."
+                },
+                "sources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/schemas/CreateInterfaceSource"
+                    },
+                    "description": "Binding sources to extract from."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Interface name override."
+                },
+                "version": {
+                    "type": "string",
+                    "description": "Interface version override."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Interface description override."
+                }
+            },
+            "additionalProperties": false
+        },
+        "FormatInfo": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "description": "Format token."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Human-readable description."
+                }
+            },
+            "required": [
+                "token"
+            ],
+            "additionalProperties": false
+        },
+        "OpenBindingsInterface": {
+            "type": "object",
+            "description": "A valid OpenBindings interface document.",
+            "additionalProperties": true
+        },
+        "BasicCredentials": {
+            "type": "object",
+            "description": "Username/password credentials for HTTP Basic authentication.",
+            "properties": {
+                "username": {
+                    "type": "string",
+                    "description": "Username."
+                },
+                "password": {
+                    "type": "string",
+                    "description": "Password."
+                }
+            },
+            "required": [
+                "username",
+                "password"
+            ],
+            "additionalProperties": false
+        },
+        "Credentials": {
+            "type": "object",
+            "description": "Well-known credential fields.",
+            "properties": {
+                "bearerToken": {
+                    "type": "string",
+                    "description": "Bearer token for HTTP Authorization header."
+                },
+                "apiKey": {
+                    "type": "string",
+                    "description": "API key."
+                },
+                "basic": {
+                    "$ref": "#/schemas/BasicCredentials",
+                    "description": "HTTP Basic credentials."
+                },
+                "custom": {
+                    "type": "object",
+                    "description": "Credential fields not covered by the well-known fields above.",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": false
+        },
+        "BindingContext": {
+            "type": "object",
+            "description": "Runtime context for a binding execution.",
+            "properties": {
+                "credentials": {
+                    "$ref": "#/schemas/Credentials",
+                    "description": "Authentication credentials for the target."
+                },
+                "headers": {
+                    "type": "object",
+                    "description": "HTTP headers to include in the request.",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "cookies": {
+                    "type": "object",
+                    "description": "Cookies to include in the request.",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "environment": {
+                    "type": "object",
+                    "description": "Environment variables to set for the execution.",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "metadata": {
+                    "type": "object",
+                    "description": "Open map for context not covered by the well-known fields above.",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": false
+        },
+        "ExecuteSource": {
+            "type": "object",
+            "description": "Binding source for execution.",
+            "properties": {
+                "format": {
+                    "type": "string",
+                    "description": "Format token."
+                },
+                "location": {
+                    "type": "string",
+                    "description": "Location of the binding source (path or URL)."
+                },
+                "content": {
+                    "description": "Binding source content directly."
+                }
+            },
+            "required": [
+                "format"
+            ],
+            "oneOf": [
+                {
+                    "required": [
+                        "location"
+                    ]
+                },
+                {
+                    "required": [
+                        "content"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "ExecuteOperationInput": {
+            "type": "object",
+            "description": "Input for executing an operation via a binding.",
+            "properties": {
+                "source": {
+                    "$ref": "#/schemas/ExecuteSource",
+                    "description": "The binding source."
+                },
+                "ref": {
+                    "type": "string",
+                    "description": "Reference to the binding within the source."
+                },
+                "input": {
+                    "description": "Operation input data."
+                },
+                "context": {
+                    "$ref": "#/schemas/BindingContext",
+                    "description": "Binding context. Applied where the protocol expects it."
+                }
+            },
+            "required": [
+                "source",
+                "ref"
+            ],
+            "additionalProperties": false
+        },
+        "ExecuteOperationOutput": {
+            "type": "object",
+            "description": "Output from executing an operation.",
+            "properties": {
+                "output": {
+                    "description": "The operation's output data. Absent if error is present."
+                },
+                "status": {
+                    "type": "integer",
+                    "description": "Status or exit code."
+                },
+                "durationMs": {
+                    "type": "number",
+                    "description": "Execution duration in milliseconds."
+                },
+                "error": {
+                    "$ref": "#/schemas/Error",
+                    "description": "Present if the operation failed."
+                }
+            },
+            "additionalProperties": true
+        },
+        "ContextSource": {
+            "type": "object",
+            "description": "Identifies the binding source that context is being requested for.",
+            "properties": {
+                "format": {
+                    "type": "string",
+                    "description": "Format token."
+                },
+                "location": {
+                    "type": "string",
+                    "description": "Location of the binding source (path or URL)."
+                },
+                "content": {
+                    "description": "Binding source content directly."
+                }
+            },
+            "required": [
+                "format"
+            ],
+            "oneOf": [
+                {
+                    "required": [
+                        "location"
+                    ]
+                },
+                {
+                    "required": [
+                        "content"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "GetContextInput": {
+            "type": "object",
+            "description": "Input for getContext. Identifies the binding target.",
+            "properties": {
+                "source": {
+                    "$ref": "#/schemas/ContextSource",
+                    "description": "The binding source that will be executed."
+                },
+                "ref": {
+                    "type": "string",
+                    "description": "Reference to the binding within the source."
+                }
+            },
+            "required": [
+                "source",
+                "ref"
+            ],
+            "additionalProperties": false
+        }
+    },
+    "operations": {
+        "getInfo": {
+            "kind": "method",
+            "description": "Return identity and metadata about ob.",
+            "idempotent": true,
+            "output": {
+                "$ref": "#/schemas/SoftwareInfo"
+            },
+            "satisfies": [
+                {
+                    "interface": "openbindings.software",
+                    "operation": "getInfo"
+                },
+                {
+                    "interface": "openbindings.binding-format-handler",
+                    "operation": "getInfo"
+                },
+                {
+                    "interface": "openbindings.binding-context-provider",
+                    "operation": "getInfo"
+                }
+            ]
+        },
+        "listFormats": {
+            "kind": "method",
+            "description": "List binding formats supported by ob.",
+            "idempotent": true,
+            "output": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/schemas/FormatInfo"
+                }
+            },
+            "satisfies": [
+                {
+                    "interface": "openbindings.binding-format-handler",
+                    "operation": "listFormats"
+                }
+            ]
+        },
+        "createInterface": {
+            "kind": "method",
+            "description": "Create an OpenBindings interface from binding source artifacts.",
+            "input": {
+                "$ref": "#/schemas/CreateInterfaceInput"
+            },
+            "output": {
+                "$ref": "#/schemas/OpenBindingsInterface"
+            },
+            "satisfies": [
+                {
+                    "interface": "openbindings.binding-format-handler",
+                    "operation": "createInterface"
+                }
+            ]
+        },
+        "executeOperation": {
+            "kind": "method",
+            "description": "Execute an operation via a binding, applying any provided context.",
+            "input": {
+                "$ref": "#/schemas/ExecuteOperationInput"
+            },
+            "output": {
+                "$ref": "#/schemas/ExecuteOperationOutput"
+            },
+            "satisfies": [
+                {
+                    "interface": "openbindings.binding-format-handler",
+                    "operation": "executeOperation"
+                }
+            ]
+        },
+        "getContext": {
+            "kind": "method",
+            "description": "Produce runtime context for a binding execution. Returns credentials, headers, and other context needed by the format handler.",
+            "input": {
+                "$ref": "#/schemas/GetContextInput"
+            },
+            "output": {
+                "$ref": "#/schemas/BindingContext"
+            },
+            "satisfies": [
+                {
+                    "interface": "openbindings.binding-context-provider",
+                    "operation": "getContext"
+                }
+            ]
+        }
+    },
+    "transforms": {
+        "getInfoInput": {
+            "type": "jsonata",
+            "expression": "{ \"format\": \"json\" }"
+        },
+        "listFormatsInput": {
+            "type": "jsonata",
+            "expression": "{ \"format\": \"json\" }"
+        },
+        "createInterfaceInput": {
+            "type": "jsonata",
+            "expression": "{ \"format\": \"json\", \"to\": openbindingsVersion, \"id\": id, \"name\": name, \"version\": version, \"description\": description, \"sources\": sources.( $base := format & \":\" & location; $opts := [ name ? \"name=\" & name : null, outputLocation ? \"outputLocation=\" & outputLocation : null, description ? \"description=\" & description : null, embed ? \"embed\" : null ]; $qs := $join($filter($opts, function($v){$v}), \"&\"); $base & ($qs ? \"?\" & $qs : \"\") ) }"
+        },
+        "getContextInput": {
+            "type": "jsonata",
+            "expression": "{ \"format\": \"json\", \"source\": source.format & \":\" & source.location, \"ref\": ref }"
+        }
+    },
+    "sources": {
+        "usage": {
+            "format": "usage@2.0.0",
+            "location": "exec:ob --usage-spec",
+            "x-ob": {
+                "ref": "exec:ob --usage-spec",
+                "resolve": "location"
+            }
+        }
+    },
+    "bindings": {
+        "getInfo.usage": {
+            "operation": "getInfo",
+            "source": "usage",
+            "ref": "info",
+            "inputTransform": {
+                "$ref": "#/transforms/getInfoInput"
+            }
+        },
+        "listFormats.usage": {
+            "operation": "listFormats",
+            "source": "usage",
+            "ref": "formats",
+            "inputTransform": {
+                "$ref": "#/transforms/listFormatsInput"
+            }
+        },
+        "createInterface.usage": {
+            "operation": "createInterface",
+            "source": "usage",
+            "ref": "create",
+            "inputTransform": {
+                "$ref": "#/transforms/createInterfaceInput"
+            }
+        },
+        "executeOperation.usage": {
+            "operation": "executeOperation",
+            "source": "usage",
+            "ref": "execute"
+        },
+        "getContext.usage": {
+            "operation": "getContext",
+            "source": "usage",
+            "ref": "context get",
+            "inputTransform": {
+                "$ref": "#/transforms/getContextInput"
+            }
+        }
+    }
+}

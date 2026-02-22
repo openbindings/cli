@@ -1,0 +1,14 @@
+# Binary
+ob
+*.exe
+bin/
+dist/
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

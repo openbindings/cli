@@ -1,0 +1,307 @@
+min_usage_version "2.0.0"
+name "ob"
+bin "ob"
+about "OpenBindings CLI"
+
+cmd "init" help="Initialize an OpenBindings environment (.openbindings/)" {
+  flag "-o --output <path>" help="Write output to file"
+  flag "-F --format <format>" help="Output format: json|yaml|text"
+}
+
+cmd "status" help="Show environment status or OBI sync report" {
+  flag "-o --output <path>" help="Write output to file"
+  flag "-F --format <format>" help="Output format: json|yaml|text"
+  arg "[obi-path]" help="OBI file path (shows sync report instead of env status)"
+}
+
+cmd "browse" help="Browse and interact with targets (TUI)"
+
+cmd "workspace" help="Manage workspaces" {
+  cmd "list" help="List all workspaces" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+  }
+  cmd "create" help="Create a new workspace" {
+    flag "--base <name>" help="Base workspace to extend"
+    flag "--standalone" help="Create without a base workspace"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Name for the new workspace"
+  }
+  cmd "use" help="Switch to a workspace" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Workspace name"
+  }
+  cmd "show" help="Show workspace details" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "[name]" help="Workspace name (default: active)"
+  }
+  cmd "delete" help="Delete a workspace" {
+    flag "--force" help="Delete even if other workspaces depend on it"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Workspace name"
+  }
+  cmd "rebase" help="Change the base of a workspace" {
+    flag "--standalone" help="Remove base (make standalone)"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Workspace to rebase"
+    arg "[new-base]" help="New base workspace"
+  }
+  cmd "rename" help="Rename a workspace" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<old-name>" help="Current workspace name"
+    arg "<new-name>" help="New workspace name"
+  }
+  cmd "copy" help="Copy a workspace (independent snapshot)" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<source>" help="Source workspace name"
+    arg "<destination>" help="Destination workspace name"
+  }
+}
+
+cmd "target" help="Manage targets in the active workspace" {
+  cmd "add" help="Add a target to the active workspace" {
+    flag "-l --label <label>" help="Display label for the target"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<url>" help="Target URL (e.g., exec:my-cli, https://api.example.com)"
+  }
+  cmd "list" help="List targets in the active workspace" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+  }
+  cmd "remove" help="Remove a target from the active workspace" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<target-id>" help="Target ID"
+  }
+  cmd "update" help="Update a target's label or URL" {
+    flag "-l --label <label>" help="New label for the target"
+    flag "-u --url <url>" help="New URL for the target"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<target-id>" help="Target ID"
+  }
+  cmd "copy" help="Copy a target from another workspace" {
+    flag "--from <workspace>" help="Source workspace to copy from (required)"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<target-id>" help="ID of the target to copy"
+  }
+}
+
+cmd "input" help="Manage named input references (workspace-scoped)" {
+  cmd "add" help="Add a named input reference" {
+    flag "--target <id>" help="Target ID (required)"
+    flag "--op <opKey>" help="Operation key (required)"
+    flag "--force" help="Overwrite if name already exists"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Input name (e.g., happy-path)"
+    arg "<ref>" help="Input reference (typically a file path)"
+  }
+  cmd "list" help="List named input references for an operation" {
+    flag "--target <id>" help="Target ID (required)"
+    flag "--op <opKey>" help="Operation key (required)"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+  }
+  cmd "show" help="Show a named input reference" {
+    flag "--target <id>" help="Target ID (required)"
+    flag "--op <opKey>" help="Operation key (required)"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Input name"
+  }
+  cmd "remove" help="Remove a named input reference" {
+    flag "--target <id>" help="Target ID (required)"
+    flag "--op <opKey>" help="Operation key (required)"
+    flag "-d --delete-file" help="Also delete the referenced local file"
+    flag "-f --force" help="Force deletion even if referenced elsewhere (requires -d)"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Input name"
+  }
+  cmd "create" help="Create an input file and add reference" {
+    flag "--target <id>" help="Target ID (required)"
+    flag "--op <opKey>" help="Operation key (required)"
+    flag "--path <path>" help="Path to write the new JSON file (default: ./inputs/...)"
+    flag "--template <t>" help="Template: blank|schema"
+    flag "--force" help="Overwrite file and/or association if it exists"
+    flag "--edit" help="Open editor after creating"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Input name"
+  }
+  cmd "edit" help="Open the input file in your editor" {
+    flag "--target <id>" help="Target ID (required)"
+    flag "--op <opKey>" help="Operation key (required)"
+    arg "<name>" help="Input name"
+  }
+  cmd "validate" help="Validate an input against the operation schema" {
+    flag "--target <id>" help="Target ID (required)"
+    flag "--op <opKey>" help="Operation key (required)"
+    flag "--timeout <dur>" help="Timeout for fetching the target OBI"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Input name"
+  }
+}
+
+cmd "info" help="Show ob identity and metadata" {
+  flag "-o --output <path>" help="Write output to file"
+  flag "-F --format <format>" help="Output format: json|yaml|text"
+}
+
+cmd "context" help="Manage binding context (credentials, headers, environment)" {
+  cmd "list" help="List all named contexts" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+  }
+  cmd "show" help="Show context details (secrets masked)" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<name>" help="Context name"
+  }
+  cmd "set" help="Set context fields (credentials, headers, environment)" {
+    flag "--bearer-token <token>" help="Bearer token (prompts if empty)"
+    flag "--api-key <key>" help="API key (prompts if empty)"
+    flag "--basic" help="Set basic auth (prompts for username and password)"
+    flag "--header <header>" help="Add header as \"Key: Value\" (repeatable)"
+    flag "--cookie <cookie>" help="Add cookie as \"Key=Value\" (repeatable)"
+    flag "--env <env>" help="Add env var as \"VAR=value\" (repeatable)"
+    flag "--meta <meta>" help="Add metadata as \"key=value\" (repeatable)"
+    arg "<name>" help="Context name"
+  }
+  cmd "remove" help="Remove a named context" {
+    arg "<name>" help="Context name"
+  }
+  cmd "get" help="Get binding context for a target" {
+    flag "--name <name>" help="Context name to load"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+  }
+}
+
+cmd "delegate" help="Manage delegates" {
+  cmd "list" help="List delegates" {
+    flag "--builtin" help="Include the builtin delegate (default: true)"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+  }
+  cmd "add" help="Add a delegate to the workspace" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<url>" help="Delegate URL (e.g., exec:my-cli, https://api.example.com)"
+  }
+  cmd "remove" help="Remove a delegate from the workspace" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<url>" help="Delegate URL"
+  }
+  cmd "prefer" help="Set preferred delegate for a format" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<format>" help="Format token (e.g., usage@2.0.0)"
+    arg "<delegate-url>" help="Delegate URL"
+  }
+  cmd "resolve" help="Show which delegate handles a format" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<format>" help="Format token to resolve"
+  }
+}
+
+cmd "formats" help="List format tokens this ob instance can handle" {
+  flag "-o --output <path>" help="Write output to file"
+  flag "-F --format <format>" help="Output format: json|yaml|text"
+}
+
+cmd "create" help="Create an OpenBindings interface from binding source artifacts" {
+  flag "--to <version>" help="Target OpenBindings version (e.g., 0.1.0)"
+  flag "--id <id>" help="Interface ID override"
+  flag "--name <name>" help="Interface name override"
+  flag "--version <version>" help="Interface version override"
+  flag "--description <desc>" help="Interface description override"
+  flag "-o --output <path>" help="Write output to file"
+  flag "-F --format <format>" help="Output format: json|yaml|text"
+  flag "-y --yes" help="Accept defaults without prompting"
+  arg "[sources]..." help="Binding sources as format:path[?options] (e.g., usage@2.13.1:./cli.kdl?name=cli&embed)"
+}
+
+cmd "source" help="Manage source references on an OBI" {
+  cmd "add" help="Register a source reference on an OBI" {
+    flag "--key <name>" help="Explicit source key (default: derived from format and path)"
+    flag "--resolve <mode>" help="Resolution mode: location (default) or content"
+    flag "--uri <url>" help="Explicit published URI for location mode"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<obi-path>" help="Path to the OBI file"
+    arg "<format:path>" help="Source as format:path (e.g., usage@2.0.0:./cli.kdl)"
+  }
+  cmd "list" help="List source references on an OBI" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<obi-path>" help="Path to the OBI file"
+  }
+  cmd "remove" help="Remove a source reference from an OBI" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<obi-path>" help="Path to the OBI file"
+    arg "<key>" help="Source key to remove"
+  }
+}
+
+cmd "sync" help="Sync sources in an OBI from their x-ob references" {
+  flag "--force" help="Prefer source for all conflicts (overwrite local edits)"
+  flag "--op <key>" help="Sync only specific operations and their bindings (repeatable)"
+  flag "--pure" help="Strip all x-ob metadata from output (requires -o)"
+  flag "-o --output <path>" help="Write output to file"
+  flag "-F --format <format>" help="Output format: json|yaml|text"
+  arg "<obi-path>" help="Path to the OBI file"
+  arg "[source-key]..." help="Source keys to sync (default: all)"
+}
+
+cmd "conflicts" help="List merge conflicts between local edits and source changes" {
+  flag "-o --output <path>" help="Write output to file"
+  flag "-F --format <format>" help="Output format: json|yaml|text"
+  arg "<obi-path>" help="Path to the OBI file"
+}
+
+cmd "operation" help="Manage and execute operations on an OBI" {
+  cmd "exec" help="Execute an operation via a binding" {
+    flag "--binding <key>" help="Binding key to execute (operation is derived from the entry)"
+    flag "--input <json>" help="Operation input as JSON"
+    flag "--context <name>" help="Named context to apply (credentials, headers, etc.)"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<obi-path>" help="Path to the OBI file"
+    arg "[operation]" help="Operation key to execute"
+  }
+  cmd "list" help="List operations on an OBI" {
+    flag "--tag <tag>" help="Filter operations by tag"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<obi-path>" help="Path to the OBI file"
+  }
+  cmd "rename" help="Rename an operation and update all references" {
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<obi-path>" help="Path to the OBI file"
+    arg "<old-key>" help="Current operation key"
+    arg "<new-key>" help="New operation key"
+  }
+  cmd "remove" help="Remove operations and their bindings from an OBI" {
+    flag "--force" help="Remove managed operations without warning"
+    flag "-o --output <path>" help="Write output to file"
+    flag "-F --format <format>" help="Output format: json|yaml|text"
+    arg "<obi-path>" help="Path to the OBI file"
+    arg "<key>..." help="Operation keys to remove"
+  }
+}

@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout openbindings-go
+        uses: actions/checkout@v4
+        with:
+          repository: openbindings/openbindings-go
+          path: _modules/openbindings-go
+
+      - name: Checkout usage-go
+        uses: actions/checkout@v4
+        with:
+          repository: openbindings/usage-go
+          path: _modules/usage-go
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Fix module paths for CI
+        run: |
+          go mod edit -replace github.com/openbindings/openbindings-go=./_modules/openbindings-go
+          go mod edit -replace github.com/openbindings/usage-go=./_modules/usage-go
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout openbindings-go
+        uses: actions/checkout@v4
+        with:
+          repository: openbindings/openbindings-go
+          path: _modules/openbindings-go
+
+      - name: Checkout usage-go
+        uses: actions/checkout@v4
+        with:
+          repository: openbindings/usage-go
+          path: _modules/usage-go
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Fix module paths for CI
+        run: |
+          go mod edit -replace github.com/openbindings/openbindings-go=./_modules/openbindings-go
+          go mod edit -replace github.com/openbindings/usage-go=./_modules/usage-go
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
